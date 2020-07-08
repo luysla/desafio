@@ -3,7 +3,14 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 def get_duration_movie(url):
-    print(url)
+    req_url = requests.get(url)
+    initial_soup_duration = BeautifulSoup(req_url.text, 'html.parser')
+    initial_raw_duration = initial_soup_duration.find('textarea', id='paste_code').text
+
+    soup_duration = BeautifulSoup(initial_raw_duration,'html.parser')
+    raw_duration = soup_duration.findAll('dd')[1].string
+    
+    return raw_duration
 
 def get_movie_info(listing_url, links_url, movie_id):
     
@@ -52,20 +59,28 @@ def get_movie_info(listing_url, links_url, movie_id):
     #Obtendo a categoria e o nome do filme adicionada nos parâmetros
     category,name = movie_id.split('/')
 
+    #Selecionando os dados no DataFrame de acordo com o parâmetro movie_id repassado
     row_movie = df_merge.loc[(df_merge['name']==name) & (df_merge['category']==category)]
 
+    #Seleciona os valores da linha selecionada
     row_movie_values = row_movie.values
 
+    #Cria parte do dicionário
     for i in row_movie_values:
         dic = {}
         dic['url'] = i[4]
         dic['titulo'] = i[1]
         dic['genero'] = i[2]
         dic['diretor'] = i[3]
-
         url_duration_movie = i[4]
 
-    get_duration_movie(url_duration_movie)
+    #Função que retorna a duração do filme 
+    duration = get_duration_movie(url_duration_movie)
+
+    #Adiciona a duração do filme no dicionário
+    dic['duracao'] = duration
+
+    #Exibe o dicionário
     print (dic)
     
 get_movie_info('https://pastebin.com/PcVfQ1ff', 'https://pastebin.com/Tdp532rr', 'terror/a vila')
