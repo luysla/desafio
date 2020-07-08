@@ -44,15 +44,28 @@ def get_movie_info(listing_url, links_url, movie_id):
     df_merge = df_merge.loc[:,~df_merge.T.duplicated(keep='first')]
 
     #Renomeando coluna do DataFrame unificado
-    df_merge = df_merge.rename(columns={'nome_x':'nome'})
+    df_merge = df_merge.rename(columns={'nome_x':'name', 'genero':'category', 'diretor':'director'})
 
     #Reorganizando as colunas
-    df_merge = df_merge.reindex(columns=['id','nome','genero','diretor','link'])
-
-    print(df_merge)
+    df_merge = df_merge.reindex(columns=['id','name','category','director','link'])
     
     #Obtendo a categoria e o nome do filme adicionada nos parâmetros
     category,name = movie_id.split('/')
-    print (category, name)
+
+    row_movie = df_merge.loc[(df_merge['name']==name) & (df_merge['category']==category)]
+
+    row_movie_values = row_movie.values
+
+    for i in row_movie_values:
+        dic = {}
+        dic['url'] = i[4]
+        dic['titulo'] = i[1]
+        dic['genero'] = i[2]
+        dic['diretor'] = i[3]
+
+        url_duration_movie = i[4]
+
+    get_duration_movie(url_duration_movie)
+    print (dic)
     
 get_movie_info('https://pastebin.com/PcVfQ1ff', 'https://pastebin.com/Tdp532rr', 'terror/a vila')
