@@ -1,9 +1,19 @@
+import sys
 import requests
 import pandas as pd
+import json
 from bs4 import BeautifulSoup
 
+#Função que obtém a duração do filme
 def get_duration_movie(url):
+
     req_url = requests.get(url)
+
+    try:
+       req_url.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        raise SystemExit(error) 
+
     initial_soup_duration = BeautifulSoup(req_url.text, 'html.parser')
     initial_raw_duration = initial_soup_duration.find('textarea', id='paste_code').text
 
@@ -12,10 +22,19 @@ def get_duration_movie(url):
     
     return raw_duration
 
-def get_movie_info(listing_url, links_url, movie_id):
-    
+def get_movie_info(listing_url: str, links_url: str, movie_id: str):
+
+    #Obtendo a categoria e o título do filme repassada nos parâmetros
+    category,title = movie_id.split('/')
+        
     #Obtendo tabela que contém os dados dos filmes
     req_listing = requests.get(listing_url)
+
+    try:
+       req_listing.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        raise SystemExit(error)
+
     initial_soup_listing = BeautifulSoup(req_listing.text, 'html.parser')
     initial_raw_listing = initial_soup_listing.find('textarea', id='paste_code').text
 
@@ -26,6 +45,12 @@ def get_movie_info(listing_url, links_url, movie_id):
 
     #Obtendo tabela que contém o link do filme
     req_links = requests.get(links_url)
+
+    try:
+       req_links.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        raise SystemExit(error)
+
     initial_soup_links = BeautifulSoup(req_links.text, 'html.parser')
     initial_raw_links = initial_soup_links.find('textarea', id='paste_code').text
 
@@ -47,20 +72,20 @@ def get_movie_info(listing_url, links_url, movie_id):
     #Unificando DataFrame
     df_merge = pd.merge(df_listing_url, df_links_url, how='inner', on=['id', 'id'])
 
-    #Retirando coluna duplicada
+    #Retirando coluna nome do filme duplicada
     df_merge = df_merge.loc[:,~df_merge.T.duplicated(keep='first')]
 
     #Renomeando coluna do DataFrame unificado
-    df_merge = df_merge.rename(columns={'nome_x':'name', 'genero':'category', 'diretor':'director'})
+    df_merge = df_merge.rename(columns={'nome_x':'title', 'genero':'category', 'diretor':'director', 'url':'link'})
 
     #Reorganizando as colunas
-    df_merge = df_merge.reindex(columns=['id','name','category','director','link'])
-    
-    #Obtendo a categoria e o nome do filme adicionada nos parâmetros
-    category,name = movie_id.split('/')
+    df_merge = df_merge.reindex(columns=['id','link','title','category','director'])
 
     #Selecionando os dados no DataFrame de acordo com o parâmetro movie_id repassado
-    row_movie = df_merge.loc[(df_merge['name']==name) & (df_merge['category']==category)]
+    row_movie = df_merge.loc[(df_merge['title']==title) & (df_merge['category']==category)]
+
+    if len(row_movie) == 0:
+        raise SystemError('Movie id not found')
 
     #Seleciona os valores da linha selecionada
     row_movie_values = row_movie.values
@@ -68,19 +93,25 @@ def get_movie_info(listing_url, links_url, movie_id):
     #Cria parte do dicionário
     for i in row_movie_values:
         dic = {}
-        dic['url'] = i[4]
-        dic['titulo'] = i[1]
-        dic['genero'] = i[2]
-        dic['diretor'] = i[3]
-        url_duration_movie = i[4]
+        dic['url'] = i[1]
+        dic['titulo'] = i[2]
+        dic['genero'] = i[3]
+        dic['diretor'] = i[4]    
 
     #Função que retorna a duração do filme 
-    duration = get_duration_movie(url_duration_movie)
+    duration = get_duration_movie(dic['url'])
 
     #Adiciona a duração do filme no dicionário
     dic['duracao'] = duration
-
-    #Exibe o dicionário
-    print (dic)
     
-get_movie_info('https://pastebin.com/PcVfQ1ff', 'https://pastebin.com/Tdp532rr', 'terror/a vila')
+    #Exibe o dicionário
+    print(json.dumps(dic,indent=4))
+
+def main():
+    if len(sys.argv) < 2:
+        raise SystemError('Invalid numbers of arguments')
+    else:
+        get_movie_info('https://pastebin.com/PcVfQ1ff', 'https://pastebin.com/Tdp532rr', sys.argv[1]+'/'+' '.join(sys.argv[2:]))
+
+if __name__ == "__main__":
+    main()
