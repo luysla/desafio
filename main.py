@@ -24,7 +24,7 @@ def get_duration_movie(url):
 
 def get_movie_info(listing_url: str, links_url: str, movie_id: str):
 
-    #Obtendo a categoria e o título do filme repassada nos parâmetros
+    #Obtendo o gênero e o título do filme repassada nos parâmetros
     category,title = movie_id.split('/')
         
     #Obtendo tabela que contém os dados dos filmes
@@ -109,7 +109,7 @@ def get_movie_info(listing_url: str, links_url: str, movie_id: str):
 
 def main():
     if len(sys.argv) < 2:
-        raise SystemError('Invalid numbers of arguments')
+        raise SystemError('Nenhum argumento informado. Utilize como argumento o gênero e nome do filme desejado.')
     else:
         get_movie_info('https://pastebin.com/PcVfQ1ff', 'https://pastebin.com/Tdp532rr', sys.argv[1]+'/'+' '.join(sys.argv[2:]))
 
